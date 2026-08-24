@@ -314,9 +314,10 @@
       const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      const safe = (d.name || "resume").replace(/[^\w一-龥-]/g, "_");
+      const now = new Date();
+      const ymd = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
       a.href = url;
-      a.download = `${safe}.json`;
+      a.download = `个人简历_${ymd}.json`;
       a.click();
       URL.revokeObjectURL(url);
       showToast("已导出 JSON");
