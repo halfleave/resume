@@ -250,7 +250,7 @@
           github: $("github").value.trim(),
           site: $("site").value.trim(),
         },
-        skills: $("skills").value.split(/[\n,，]/).map(s => s.trim()).filter(Boolean),
+        skills: $("skills").value.split("\n").map(s => s.trim()).filter(Boolean),
       };
       SECTIONS.forEach(sec => {
         const list = document.querySelectorAll(`.dyn-list[data-sec="${sec.key}"] .dyn-item`);
