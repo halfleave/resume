@@ -290,13 +290,19 @@ section.block > h2 .sec-icon svg { width: 14px; height: 14px; }
 }
 
 /* ===== 编辑页 ===== */
-.edit-wrap { max-width: 640px; margin: 0 auto; padding: 30px 20px 80px; }
+.edit-wrap { max-width: 640px; margin: 0 auto; padding: 0 20px 80px; }
 .edit-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 24px;
+  padding: 14px 0;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
 }
 .edit-header-left {
   display: flex;
@@ -459,6 +465,29 @@ section.block > h2 .sec-icon svg { width: 14px; height: 14px; }
   margin-bottom: 10px;
 }
 .dyn-item .dyn-head span { font-size: 12px; color: var(--ink-soft); }
+.dyn-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.btn-move-up,
+.btn-move-down {
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink-soft);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 14px;
+  min-width: 40px;
+  cursor: pointer;
+  touch-action: manipulation;
+  cursor: pointer;
+  line-height: 1;
+}
+.btn-move-up:hover,
+.btn-move-down:hover { background: #f9f9fb; color: var(--ink); }
+.btn-move-up:disabled,
+.btn-move-down:disabled { opacity: 0.35; cursor: not-allowed; }
 .btn-del {
   border: none;
   background: #ffe5e5;
@@ -539,4 +568,77 @@ section.block > h2 .sec-icon svg { width: 14px; height: 14px; }
   body { background: #fff; }
   .wrap { padding: 0; }
   section.block { break-inside: avoid; }
+}
+
+/* ===== iOS / iPad 适配 ===== */
+/* 去除 iOS Safari 点击高亮，避免头像/链接出现灰色块 */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+/* iOS Safari 对 100% 高度的 img 加 aspect-ratio 需兜底 */
+.avatar {
+  -webkit-object-fit: cover;
+  object-fit: cover;
+}
+
+/* iPad / 平板及以下：适当收窄留白 */
+@media (max-width: 820px) {
+  :root { --maxw: 100%; }
+  .wrap { padding: 32px 24px 64px; }
+  .topbar { margin: -32px -24px 0; }
+  .name { font-size: 24px; }
+  .topbar-right { font-size: 16px; }
+}
+
+/* iPhone / 手机：头部改为上下堆叠，基本信息单列 */
+@media (max-width: 560px) {
+  .wrap { padding: 24px 16px 56px; }
+  .topbar { margin: -24px -16px 0; padding: 10px 14px; }
+  .topbar-left { font-size: 12px; }
+  .topbar-right { font-size: 14px; letter-spacing: 1px; }
+
+  header.profile {
+    flex-direction: column-reverse;
+    align-items: center;
+    text-align: center;
+    gap: 16px;
+    padding: 18px 0 16px;
+  }
+  .profile-main { width: 100%; }
+  .name { font-size: 22px; }
+  .title { margin-bottom: 10px; }
+  .tagline { max-width: 100%; }
+  .avatar-wrap { order: -1; }
+  .avatar { width: 88px; height: 116px; }
+
+  /* 基本信息改为两列紧凑网格，标签与值不换行 */
+  .meta-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 10px;
+    font-size: 12px;
+  }
+  .meta-cell { white-space: normal; }
+  .meta-value {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+    word-break: break-all;
+  }
+
+  /* 履历三列在窄屏改为换行堆叠 */
+  .item .row.three {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+  .item .row.three .org { margin-left: 0; }
+  .item .period { white-space: normal; }
+
+  section.block > h2 { font-size: 14px; }
+  .item .role { font-size: 14px; }
+}
+
+/* 超小屏微调 */
+@media (max-width: 360px) {
+  .meta-grid { grid-template-columns: 1fr; }
+  .name { font-size: 20px; }
 }

@@ -110,22 +110,21 @@
     // 动态区块定义
     const SECTIONS = [
       { key: "education", title: "教育背景", fields: [
-        { k: "role", label: "专业 / 学位", ph: "计算机科学 学士" },
-        { k: "org", label: "学校", ph: "某某大学" },
-        { k: "period", label: "时间", ph: "2018 - 2022" },
-        { k: "desc", label: "补充说明", ph: "GPA / 荣誉等", area: true },
+        { k: "role", label: "专业 / 学位", ph: "计算机科学 学士", inline: true },
+        { k: "org", label: "学校", ph: "某某大学", inline: true },
+        { k: "period", label: "时间", ph: "2018 - 2022", inline: true },
       ]},
       { key: "experience", title: "工作经历", fields: [
-        { k: "role", label: "职位", ph: "前端工程师" },
-        { k: "org", label: "公司", ph: "某某公司" },
-        { k: "period", label: "时间", ph: "2022.07 - 至今" },
-        { k: "points", label: "要点（每行一条）", ph: "负责 XX 模块\n提升性能 30%", area: true },
+        { k: "role", label: "职位", ph: "前端工程师", inline: true },
+        { k: "org", label: "公司", ph: "某某公司", inline: true },
+        { k: "period", label: "时间", ph: "2022.07 - 至今", inline: true },
+        { k: "points", label: "要点（每行一条）", ph: "负责 XX 模块\n提升性能 30%", area: true, rows: 4 },
       ]},
       { key: "projects", title: "项目经验", fields: [
-        { k: "role", label: "项目名称", ph: "某某系统" },
-        { k: "org", label: "角色（可选）", ph: "负责人" },
-        { k: "period", label: "时间", ph: "2023" },
-        { k: "points", label: "要点（每行一条）", ph: "使用 React 构建\n服务 1w+ 用户", area: true },
+        { k: "role", label: "项目名称", ph: "某某系统", inline: true },
+        { k: "org", label: "角色（可选）", ph: "负责人", inline: true },
+        { k: "period", label: "时间", ph: "2023", inline: true },
+        { k: "points", label: "要点（每行一条）", ph: "使用 React 构建\n服务 1w+ 用户", area: true, rows: 4 },
       ]},
     ];
 
@@ -161,20 +160,75 @@
       });
     }
 
+    function renderField(f, val) {
+      const v = val[f.k] || "";
+      const input = f.area
+        ? `<textarea data-f="${f.k}" rows="${f.rows || 2}">${v}</textarea>`
+        : `<input data-f="${f.k}" value="${v}" />`;
+      return `<div class="field">
+        <label>${f.label}</label>
+        ${input}
+      </div>`;
+    }
+
     function renderItem(sec, val, idx) {
       const el = document.createElement("div");
       el.className = "dyn-item";
-      const fieldsHtml = sec.fields.map(f => `
-        <div class="field">
-          <label>${f.label}</label>
-          ${f.area
-            ? `<textarea data-f="${f.k}" rows="2">${val[f.k] || ""}</textarea>`
-            : `<input data-f="${f.k}" value="${val[f.k] || ""}" />`}
-        </div>`).join("");
+      el.dataset.sec = sec.key;
+      let fieldsHtml = "";
+      let inlineGroup = [];
+      sec.fields.forEach(f => {
+        if (f.inline) {
+          inlineGroup.push(f);
+        } else {
+          if (inlineGroup.length) {
+            fieldsHtml += `<div class="field-row">${inlineGroup.map(x => renderField(x, val)).join("")}</div>`;
+            inlineGroup = [];
+          }
+          fieldsHtml += renderField(f, val);
+        }
+      });
+      if (inlineGroup.length) {
+        fieldsHtml += `<div class="field-row">${inlineGroup.map(x => renderField(x, val)).join("")}</div>`;
+      }
       el.innerHTML = `<div class="dyn-head"><span>${sec.title} #${idx + 1}</span>
-        <button class="btn-del">删除</button></div>${fieldsHtml}`;
-      el.querySelector(".btn-del").addEventListener("click", () => el.remove());
+        <div class="dyn-actions">
+          <button class="btn-move-up" title="上移">↑</button>
+          <button class="btn-move-down" title="下移">↓</button>
+          <button class="btn-del">删除</button>
+        </div></div>${fieldsHtml}`;
+
+      el.querySelector(".btn-del").addEventListener("click", () => {
+        el.remove();
+        renumber(sec.key);
+      });
+      el.querySelector(".btn-move-up").addEventListener("click", () => moveItem(el, -1));
+      el.querySelector(".btn-move-down").addEventListener("click", () => moveItem(el, 1));
       return el;
+    }
+
+    function moveItem(el, dir) {
+      const sec = el.dataset.sec;
+      const list = el.parentElement;
+      const items = Array.from(list.children);
+      const idx = items.indexOf(el);
+      if (idx === -1) return;
+      const targetIdx = idx + dir;
+      if (targetIdx < 0 || targetIdx >= items.length) return;
+      const target = items[targetIdx];
+      if (dir === -1) list.insertBefore(el, target);
+      else list.insertBefore(target, el);
+      renumber(sec);
+    }
+
+    function renumber(secKey) {
+      const list = document.querySelector(`.dyn-list[data-sec="${secKey}"]`);
+      if (!list) return;
+      Array.from(list.children).forEach((child, i) => {
+        const title = child.querySelector(".dyn-head span");
+        const sec = SECTIONS.find(s => s.key === secKey);
+        if (title) title.textContent = `${sec.title} #${i + 1}`;
+      });
     }
 
     function collect() {
@@ -249,9 +303,7 @@
 
     $("save").addEventListener("click", () => {
       localStorage.setItem(KEY, JSON.stringify(collect()));
-      const t = $("toast");
-      t.classList.add("show");
-      setTimeout(() => t.classList.remove("show"), 1600);
+      window.location.href = "index.html";
     });
 
     // 导出为 JSON 文件（不含头像 base64 数据）
