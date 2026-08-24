@@ -18,6 +18,7 @@
       <div class="actions">
         <button class="btn btn-ghost" id="export">导出</button>
         <button class="btn btn-ghost" id="import">导入</button>
+        <button class="btn btn-ghost" id="clear">清空</button>
         <button class="btn btn-primary" id="save">保存</button>
       </div>
     </div>
@@ -304,6 +305,13 @@
     $("save").addEventListener("click", () => {
       localStorage.setItem(KEY, JSON.stringify(collect()));
       window.location.href = "index.html";
+    });
+
+    // 清空：直接重置所有字段与动态区块（不自动保存，需手动保存生效）
+    $("clear").addEventListener("click", () => {
+      fill({});
+      buildLists({});
+      showToast("已清空，记得点保存");
     });
 
     // 导出为 JSON 文件（不含头像 base64 数据）
