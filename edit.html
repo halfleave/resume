@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>编辑简历</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="edit-wrap">
+    <div class="edit-header">
+      <div class="edit-header-left">
+        <button class="btn-back" id="back" title="返回简历页" aria-label="返回简历页">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+        </button>
+        <h1>编辑简历</h1>
+      </div>
+      <div class="actions">
+        <button class="btn btn-ghost" id="export">导出</button>
+        <button class="btn btn-ghost" id="import">导入</button>
+        <button class="btn btn-primary" id="save">保存</button>
+      </div>
+    </div>
+
+    <div class="profile-edit-grid">
+      <div class="field">
+        <label>姓名 *</label>
+        <input id="name" placeholder="你的名字" />
+      </div>
+      <div class="field">
+        <label>职位 / 头衔</label>
+        <input id="title" placeholder="如：前端工程师" />
+      </div>
+      <div class="field profile-edit-avatar">
+        <label>头像</label>
+        <div class="avatar-upload">
+          <div class="avatar-preview placeholder" id="avatarPreview">?</div>
+          <label class="btn-upload" for="avatarFile">选择图片</label>
+          <input type="file" id="avatarFile" accept="image/*" />
+        </div>
+      </div>
+      <div class="field">
+        <label>求职意向</label>
+        <input id="intention" placeholder="如：UI设计师" />
+      </div>
+      <div class="field">
+        <label>一句话简介</label>
+        <input id="tagline" placeholder="简短的自我介绍" />
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label>性别</label>
+        <input id="gender" placeholder="男 / 女" />
+      </div>
+      <div class="field">
+        <label>年龄</label>
+        <input id="age" placeholder="26岁" />
+      </div>
+      <div class="field">
+        <label>最高学历</label>
+        <input id="degree" placeholder="本科" />
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label>邮箱</label>
+        <input id="email" placeholder="you@example.com" />
+      </div>
+      <div class="field">
+        <label>电话</label>
+        <input id="phone" placeholder="138..." />
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>所在地</label>
+        <input id="location" placeholder="城市" />
+      </div>
+      <div class="field">
+        <label>GitHub 链接</label>
+        <input id="github" placeholder="https://github.com/..." />
+      </div>
+    </div>
+    <div class="field">
+      <label>个人网站（可选）</label>
+      <input id="site" placeholder="https://..." />
+    </div>
+
+    <!-- 动态列表：教育 / 工作 / 项目 -->
+    <div id="lists"></div>
+
+    <div class="field">
+      <label>核心能力（每行一个）</label>
+      <textarea id="skills" rows="4" placeholder="全链路设计：用户研究→交互原型→视觉设计→开发落地&#10;动效设计：Principle / After Effects 交互动画&#10;设计工具：Adobe XD（Figma / Sketch）"></textarea>
+    </div>
+
+    <input type="file" id="importFile" accept="application/json,.json" hidden />
+  </div>
+
+  <div class="toast" id="toast">已保存</div>
+
+  <script>
+    const KEY = "resume_data_v1";
+    const $ = id => document.getElementById(id);
+    let currentAvatar = "";
+
+    // 动态区块定义
+    const SECTIONS = [
+      { key: "education", title: "教育背景", fields: [
+        { k: "role", label: "专业 / 学位", ph: "计算机科学 学士" },
+        { k: "org", label: "学校", ph: "某某大学" },
+        { k: "period", label: "时间", ph: "2018 - 2022" },
+        { k: "desc", label: "补充说明", ph: "GPA / 荣誉等", area: true },
+      ]},
+      { key: "experience", title: "工作经历", fields: [
+        { k: "role", label: "职位", ph: "前端工程师" },
+        { k: "org", label: "公司", ph: "某某公司" },
+        { k: "period", label: "时间", ph: "2022.07 - 至今" },
+        { k: "points", label: "要点（每行一条）", ph: "负责 XX 模块\n提升性能 30%", area: true },
+      ]},
+      { key: "projects", title: "项目经验", fields: [
+        { k: "role", label: "项目名称", ph: "某某系统" },
+        { k: "org", label: "角色（可选）", ph: "负责人" },
+        { k: "period", label: "时间", ph: "2023" },
+        { k: "points", label: "要点（每行一条）", ph: "使用 React 构建\n服务 1w+ 用户", area: true },
+      ]},
+    ];
+
+    function load() {
+      try { return JSON.parse(localStorage.getItem(KEY)) || {}; }
+      catch { return {}; }
+    }
+
+    // 渲染动态列表容器
+    function buildLists(data) {
+      const wrap = $("lists");
+      wrap.innerHTML = "";
+      SECTIONS.forEach(sec => {
+        const items = data[sec.key] || [];
+        const box = document.createElement("div");
+        box.className = "field";
+        box.innerHTML = `<div class="section-head">
+            <label>${sec.title}</label>
+            <button class="btn-add" data-add="${sec.key}">+ 添加</button>
+          </div>
+          <div class="dyn-list" data-sec="${sec.key}"></div>`;
+        wrap.appendChild(box);
+        const list = box.querySelector(".dyn-list");
+        items.forEach((it, i) => list.appendChild(renderItem(sec, it, i)));
+      });
+
+      wrap.querySelectorAll("[data-add]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const sec = SECTIONS.find(s => s.key === btn.dataset.add);
+          const list = wrap.querySelector(`.dyn-list[data-sec="${sec.key}"]`);
+          list.appendChild(renderItem(sec, {}, list.children.length));
+        });
+      });
+    }
+
+    function renderItem(sec, val, idx) {
+      const el = document.createElement("div");
+      el.className = "dyn-item";
+      const fieldsHtml = sec.fields.map(f => `
+        <div class="field">
+          <label>${f.label}</label>
+          ${f.area
+            ? `<textarea data-f="${f.k}" rows="2">${val[f.k] || ""}</textarea>`
+            : `<input data-f="${f.k}" value="${val[f.k] || ""}" />`}
+        </div>`).join("");
+      el.innerHTML = `<div class="dyn-head"><span>${sec.title} #${idx + 1}</span>
+        <button class="btn-del">删除</button></div>${fieldsHtml}`;
+      el.querySelector(".btn-del").addEventListener("click", () => el.remove());
+      return el;
+    }
+
+    function collect() {
+      const d = {
+        avatar: currentAvatar,
+        name: $("name").value.trim(),
+        title: $("title").value.trim(),
+        intention: $("intention").value.trim(),
+        tagline: $("tagline").value.trim(),
+        meta: {
+          gender: $("gender").value.trim(),
+          age: $("age").value.trim(),
+          degree: $("degree").value.trim(),
+        },
+        contact: {
+          email: $("email").value.trim(),
+          phone: $("phone").value.trim(),
+          location: $("location").value.trim(),
+          github: $("github").value.trim(),
+          site: $("site").value.trim(),
+        },
+        skills: $("skills").value.split(/[\n,，]/).map(s => s.trim()).filter(Boolean),
+      };
+      SECTIONS.forEach(sec => {
+        const list = document.querySelectorAll(`.dyn-list[data-sec="${sec.key}"] .dyn-item`);
+        d[sec.key] = Array.from(list).map(item => {
+          const o = {};
+          item.querySelectorAll("[data-f]").forEach(inp => {
+            o[inp.dataset.f] = inp.value.trim();
+          });
+          return o;
+        }).filter(o => Object.values(o).some(Boolean));
+      });
+      return d;
+    }
+
+    function setAvatarPreview(url) {
+      const el = $("avatarPreview");
+      if (url) {
+        el.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;border-radius:8px" />`;
+        el.classList.remove("placeholder");
+      } else {
+        el.textContent = "?";
+        el.classList.add("placeholder");
+      }
+    }
+
+    function fill(data) {
+      currentAvatar = data.avatar || "";
+      setAvatarPreview(currentAvatar);
+      $("name").value = data.name || "";
+      $("title").value = data.title || "";
+      $("intention").value = data.intention || "";
+      $("tagline").value = data.tagline || "";
+      const m = data.meta || {};
+      $("gender").value = m.gender || "";
+      $("age").value = m.age || "";
+      $("degree").value = m.degree || "";
+      const c = data.contact || {};
+      $("email").value = c.email || "";
+      $("phone").value = c.phone || "";
+      $("location").value = c.location || "";
+      $("github").value = c.github || "";
+      $("site").value = c.site || "";
+      $("skills").value = (data.skills || []).join("\n");
+    }
+
+    // 初始化
+    const data = load();
+    fill(data);
+    buildLists(data);
+
+    $("save").addEventListener("click", () => {
+      localStorage.setItem(KEY, JSON.stringify(collect()));
+      const t = $("toast");
+      t.classList.add("show");
+      setTimeout(() => t.classList.remove("show"), 1600);
+    });
+
+    // 导出为 JSON 文件（不含头像 base64 数据）
+    $("export").addEventListener("click", () => {
+      const d = collect();
+      const exportData = { ...d };
+      delete exportData.avatar;
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const safe = (d.name || "resume").replace(/[^\w一-龥-]/g, "_");
+      a.href = url;
+      a.download = `${safe}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast("已导出 JSON");
+    });
+
+    // 导入 JSON 文件
+    $("import").addEventListener("click", () => $("importFile").click());
+    $("importFile").addEventListener("change", e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const d = JSON.parse(reader.result);
+          // 导出的 JSON 不含头像，导入时保留当前头像
+          if (!d.avatar && currentAvatar) d.avatar = currentAvatar;
+          fill(d);
+          buildLists(d);
+          localStorage.setItem(KEY, JSON.stringify(d));
+          showToast("已导入并保存");
+        } catch {
+          showToast("文件格式错误");
+        }
+        e.target.value = "";
+      };
+      reader.readAsText(file);
+    });
+
+    // 头像本地上传（转 base64）
+    $("avatarFile").addEventListener("change", e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        currentAvatar = reader.result;
+        setAvatarPreview(currentAvatar);
+        e.target.value = "";
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // 返回简历页：自动保存后跳转
+    $("back").addEventListener("click", () => {
+      localStorage.setItem(KEY, JSON.stringify(collect()));
+      location.href = "index.html";
+    });
+
+    function showToast(msg) {
+      const t = $("toast");
+      t.textContent = msg;
+      t.classList.add("show");
+      setTimeout(() => t.classList.remove("show"), 1600);
+    }
+  </script>
+</body>
+</html>

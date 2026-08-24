@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>简历</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- 右上角隐藏编辑入口：极低存在感 -->
+  <a class="edit-entry" href="edit.html" title="编辑" aria-label="编辑简历">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+      stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+    </svg>
+  </a>
+
+  <div class="wrap" id="resume"><!-- JS 渲染 --></div>
+
+  <script>
+    const KEY = "resume_data_v1";
+    const $ = (sel, el = document) => el.querySelector(sel);
+
+    function load() {
+      try { return JSON.parse(localStorage.getItem(KEY)) || null; }
+      catch { return null; }
+    }
+
+    function esc(s) {
+      return (s || "").replace(/[&<>"']/g, c => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      }[c]));
+    }
+
+    // 线性平面图标
+    const SVG = {
+      phone: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`,
+      gender: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8"/><circle cx="12" cy="7" r="4"/></svg>`,
+      age: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
+      degree: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10l-10-6-10 6 10 6 10-6z"/><path d="M6 12v5a3 3 0 0 0 3 3h6a3 3 0 0 0 3-3v-5"/></svg>`,
+      email: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>`,
+      location: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>`,
+      education: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10l-10-6-10 6 10 6 10-6z"/><path d="M6 12v5a3 3 0 0 0 3 3h6a3 3 0 0 0 3-3v-5"/></svg>`,
+      experience: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>`,
+      projects: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l7.794 4.5v9L12 20l-7.794-4.5v-9L12 2z"/><path d="M12 12L4.206 7.5"/><path d="M12 12v8.5"/></svg>`,
+      skills: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10H12V2z"/><path d="M21.18 8.02A10 10 0 0 0 12 2v10h9.18a10 10 0 0 0 .18-1.98z"/></svg>`,
+    };
+
+    function secHeader(title, iconKey) {
+      return `<h2><span class="sec-icon">${SVG[iconKey]}</span>${esc(title)}</h2>`;
+    }
+
+    function metaRow(iconKey, label, value, isLink) {
+      const v = isLink
+        ? `<a href="${isLink}${esc(value)}">${esc(value)}</a>`
+        : esc(value);
+      return `<div class="meta-cell">
+        <span class="meta-ico">${SVG[iconKey]}</span>
+        <span class="meta-label"><span class="meta-text">${esc(label)}</span><span class="meta-colon">：</span></span>
+        <span class="meta-value">${v}</span>
+      </div>`;
+    }
+
+    function skelLine(w, cls = "") {
+      return `<span class="skel desc-s ${cls}" style="width:${w}"></span>`;
+    }
+
+    function skelItem(withList) {
+      const list = withList
+        ? `<ul><li>${skelLine("88%")}</li><li>${skelLine("62%")}</li></ul>` : "";
+      return `<div class="item">
+        <div class="row three">
+          <div>${skelLine("170px", "role-s")} ${skelLine("90px")}</div>
+          ${skelLine("80px")}
+          ${skelLine("90px", "period-s")}
+        </div>
+        ${list}
+      </div>`;
+    }
+
+    function skelMetaRow(iconKey, label, w) {
+      return `<div class="meta-cell">
+        <span class="meta-ico">${SVG[iconKey]}</span>
+        <span class="meta-label"><span class="meta-text">${esc(label)}</span><span class="meta-colon">：</span></span>
+        <span class="meta-value">${skelLine(w)}</span>
+      </div>`;
+    }
+
+    function placeholderLayout() {
+      const root = $("#resume");
+      document.title = "简历";
+      root.innerHTML = `
+        <div class="topbar">
+          <span class="topbar-left">求职意向：<span class="skel" style="width:120px">&nbsp;</span></span>
+          <span class="topbar-right">PERSONAL RESUME</span>
+        </div>
+        <header class="profile">
+          <div class="profile-main">
+            <h1 class="name">${skelLine("120px", "name-s")}</h1>
+            <p class="title">${skelLine("180px", "title-s")}</p>
+            <div class="meta-grid">
+              ${skelMetaRow("gender", "性别", "80px")}
+              ${skelMetaRow("age", "年龄", "80px")}
+              ${skelMetaRow("phone", "联系方式", "80px")}
+              ${skelMetaRow("degree", "最高学历", "80px")}
+              ${skelMetaRow("email", "邮箱", "80px")}
+              ${skelMetaRow("location", "所在地", "80px")}
+            </div>
+          </div>
+          <div class="avatar-wrap"><div class="avatar placeholder">?</div></div>
+        </header>
+        <section class="block">${secHeader("教育背景", "education")}${skelItem(false)}</section>
+        <section class="block">${secHeader("工作经历", "experience")}${skelItem(true)}${skelItem(true)}</section>
+        <section class="block">${secHeader("项目经验", "projects")}${skelItem(true)}</section>
+        <section class="block">${secHeader("核心能力", "skills")}
+          <div class="item"><ul><li>${skelLine("92%")}</li><li>${skelLine("78%")}</li><li>${skelLine("64%")}</li></ul></div>
+        </section>`;
+    }
+
+    function render(d) {
+      const root = $("#resume");
+      const data = d && (d.name || d.title || (d.contact && d.contact.phone) || (d.meta && (d.meta.gender || d.meta.age || d.meta.degree)) || d.intention || d.tagline || (d.education && d.education.length) || (d.experience && d.experience.length) || (d.projects && d.projects.length) || (d.skills && d.skills.length) || d.avatar)
+        ? d : null;
+      if (!data) {
+        placeholderLayout();
+        return;
+      }
+      document.title = esc(data.name || "简历") + " 的简历";
+
+      const c = data.contact || {};
+      const meta = data.meta || {};
+
+      // 基本信息（混合：有值显示值，无值显示占位条）
+      const metaDefs = [
+        { k: "gender", icon: "gender", label: "性别", val: meta.gender, w: "40px" },
+        { k: "age", icon: "age", label: "年龄", val: meta.age, w: "40px" },
+        { k: "phone", icon: "phone", label: "联系方式", val: c.phone, w: "100px" },
+        { k: "degree", icon: "degree", label: "最高学历", val: meta.degree, w: "60px" },
+        { k: "email", icon: "email", label: "邮箱", val: c.email, w: "130px", link: "mailto:" },
+        { k: "location", icon: "location", label: "所在地", val: c.location, w: "80px" },
+      ];
+      const metaItems = metaDefs.map(m => m.val
+        ? metaRow(m.icon, m.label, m.val, m.link || false)
+        : skelMetaRow(m.icon, m.label, m.w));
+      const metaHtml = `<div class="meta-grid">${metaItems.join("")}</div>`;
+
+      // 求职意向
+      const intentionHtml = data.intention
+        ? `<span class="topbar-left">求职意向：${esc(data.intention)}</span>`
+        : `<span class="topbar-left">求职意向：${skelLine("120px")}</span>`;
+
+      // 头像
+      let avatar;
+      if (data.avatar) avatar = `<img class="avatar" src="${esc(data.avatar)}" alt="头像" />`;
+      else avatar = `<div class="avatar placeholder">${esc((data.name || "?").slice(0, 1))}</div>`;
+
+      const nameHtml = data.name ? esc(data.name) : skelLine("120px", "name-s");
+      const titleHtml = data.title ? `<p class="title">${esc(data.title)}</p>` : `<p class="title">${skelLine("180px", "title-s")}</p>`;
+      const taglineHtml = data.tagline ? `<p class="tagline">${esc(data.tagline)}</p>` : "";
+
+      let html = `
+        <div class="topbar">
+          ${intentionHtml}
+          <span class="topbar-right">PERSONAL RESUME</span>
+        </div>
+        <header class="profile">
+          <div class="profile-main">
+            <h1 class="name">${nameHtml}</h1>
+            ${titleHtml}
+            ${metaHtml}
+            ${taglineHtml}
+          </div>
+          <div class="avatar-wrap">${avatar}</div>
+        </header>`;
+
+      // 通用区块渲染（无数据时使用占位条目）
+      function block(title, iconKey, items, renderItem, withList) {
+        const body = (items && items.length) ? items.map(renderItem).join("") : skelItem(withList);
+        return `<section class="block">${secHeader(title, iconKey)}${body}</section>`;
+      }
+
+      function renderCareer(it, kind) {
+        const isProject = kind === "projects";
+        const left = isProject ? esc(it.role) : esc(it.org);
+        const mid = isProject ? esc(it.org) : esc(it.role);
+        return `<div class="item">
+          <div class="row three">
+            <div><span class="role">${left}</span></div>
+            ${mid ? `<span class="org">${mid}</span>` : ""}
+            ${it.period ? `<span class="period">${esc(it.period)}</span>` : ""}
+          </div>
+          ${it.desc ? `<p class="desc">${esc(it.desc)}</p>` : ""}
+          ${it.points ? `<ul>${it.points.split("\n").filter(Boolean).map(p => `<li>${esc(p)}</li>`).join("")}</ul>` : ""}
+        </div>`;
+      }
+
+      html += block("教育背景", "education", data.education, it => `<div class="item">
+        <div class="row three">
+          <div><span class="role">${esc(it.org)}</span></div>
+          <span class="org">${esc(it.role)}</span>
+          ${it.period ? `<span class="period">${esc(it.period)}</span>` : ""}
+        </div>
+        ${it.desc ? `<p class="desc">${esc(it.desc)}</p>` : ""}
+      </div>`, false);
+
+      html += block("工作经历", "experience", data.experience, it => renderCareer(it, "experience"), true);
+      html += block("项目经验", "projects", data.projects, it => renderCareer(it, "projects"), true);
+
+      // 核心能力：有数据用 bullet 列表，无数据用占位
+      if (data.skills && data.skills.length) {
+        const bullets = data.skills.map(s => `<li>${esc(s)}</li>`).join("");
+        html += `<section class="block">${secHeader("核心能力", "skills")}<div class="item"><ul>${bullets}</ul></div></section>`;
+      } else {
+        html += `<section class="block">${secHeader("核心能力", "skills")}
+          <div class="item"><ul><li>${skelLine("92%")}</li><li>${skelLine("78%")}</li><li>${skelLine("64%")}</li></ul></div>
+        </section>`;
+      }
+
+      root.innerHTML = html;
+    }
+
+    render(load());
+  </script>
+</body>
+</html>
