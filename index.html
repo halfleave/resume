@@ -66,18 +66,17 @@
       return `<span class="skel desc-s ${cls}" style="width:${w}"></span>`;
     }
 
-    function skelItem(withList) {
-      const list = withList
-        ? `<ul><li>${skelLine("88%")}</li><li>${skelLine("62%")}</li></ul>` : "";
-      return `<div class="item">
-        <div class="row three">
-          <div>${skelLine("170px", "role-s")} ${skelLine("90px")}</div>
-          ${skelLine("80px")}
-          ${skelLine("90px", "period-s")}
-        </div>
-        ${list}
-      </div>`;
-    }
+      function skelItem(withList) {
+        const list = withList
+          ? `<ul><li>${skelLine("88%")}</li><li>${skelLine("62%")}</li></ul>` : "";
+        return `<div class="item">
+          <div class="row three">
+            <div>${skelLine("170px", "role-s")} ${skelLine("16px")} ${skelLine("90px")}</div>
+            ${skelLine("90px", "period-s")}
+          </div>
+          ${list}
+        </div>`;
+      }
 
     function skelMetaRow(iconKey, label, w) {
       return `<div class="meta-cell">
@@ -182,12 +181,14 @@
 
       function renderCareer(it, kind) {
         const isProject = kind === "projects";
-        const left = isProject ? esc(it.role) : esc(it.org);
-        const mid = isProject ? esc(it.org) : esc(it.role);
+        const org = isProject ? esc(it.org) : esc(it.org);
+        const role = isProject ? esc(it.role) : esc(it.role);
+        const head = role
+          ? `<span class="role">${org}</span> <span class="org">·</span> <span class="org">${role}</span>`
+          : `<span class="role">${org}</span>`;
         return `<div class="item">
           <div class="row three">
-            <div><span class="role">${left}</span></div>
-            ${mid ? `<span class="org">${mid}</span>` : ""}
+            <div>${head}</div>
             ${it.period ? `<span class="period">${esc(it.period)}</span>` : ""}
           </div>
           ${it.desc ? `<p class="desc">${esc(it.desc)}</p>` : ""}
