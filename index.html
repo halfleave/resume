@@ -181,11 +181,12 @@
 
       function renderCareer(it, kind) {
         const isProject = kind === "projects";
-        const org = isProject ? esc(it.org) : esc(it.org);
-        const role = isProject ? esc(it.role) : esc(it.role);
-        const head = role
-          ? `<span class="role">${org}</span> <span class="org">·</span> <span class="org">${role}</span>`
-          : `<span class="role">${org}</span>`;
+        // 工作经历：公司(org) · 职位(role)；项目经验：项目名称(role) · 角色(org)
+        const main = isProject ? esc(it.role) : esc(it.org);
+        const sub = isProject ? esc(it.org) : esc(it.role);
+        const head = sub
+          ? `<span class="role">${main}</span> <span class="org">·</span> <span class="org">${sub}</span>`
+          : `<span class="role">${main}</span>`;
         return `<div class="item">
           <div class="row three">
             <div>${head}</div>
