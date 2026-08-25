@@ -572,9 +572,11 @@ section.block > h2 .sec-icon svg { width: 14px; height: 14px; }
   .edit-entry, .actions, .btn-add, .btn-del, .toast { display: none !important; }
   body { background: #fff; }
   .wrap { padding: 0; }
-  /* 仅防止单条经历/项目被分页截断，允许大区块跨页流动，避免整块下移留白 */
+  /* 允许大区块与单条记录跨页流动，仅在段落/列表内部避免断页，消除整段下移造成的空白 */
   section.block { break-inside: auto; }
-  .item { break-inside: avoid; }
+  section.block > h2 { break-after: avoid; }
+  .item { break-inside: auto; }
+  .item p, .item ul { break-inside: avoid; }
 }
 
 /* ===== iOS / iPad 适配 ===== */
