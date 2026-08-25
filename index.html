@@ -179,6 +179,16 @@
         return `<section class="block">${secHeader(title, iconKey)}${body}</section>`;
       }
 
+      // 工作经历/项目经验专用：标题 + 第一项作为一个整体区块，后续每项各自成区块
+      function careerBlock(title, iconKey, items, renderItem, withList) {
+        if (!items || !items.length) {
+          return `<section class="block">${secHeader(title, iconKey)}${skelItem(withList)}</section>`;
+        }
+        const first = `<section class="block">${secHeader(title, iconKey)}${renderItem(items[0])}</section>`;
+        const rest = items.slice(1).map(it => `<section class="block">${renderItem(it)}</section>`).join("");
+        return first + rest;
+      }
+
       function renderCareer(it, kind) {
         const isProject = kind === "projects";
         // 工作经历：公司(org) · 职位(role)；项目经验：项目名称(role) · 角色(org)
@@ -206,8 +216,8 @@
         ${it.desc ? `<p class="desc">${esc(it.desc)}</p>` : ""}
       </div>`, false);
 
-      html += block("工作经历", "experience", data.experience, it => renderCareer(it, "experience"), true);
-      html += block("项目经验", "projects", data.projects, it => renderCareer(it, "projects"), true);
+      html += careerBlock("工作经历", "experience", data.experience, it => renderCareer(it, "experience"), true);
+      html += careerBlock("项目经验", "projects", data.projects, it => renderCareer(it, "projects"), true);
 
       // 核心能力：有数据用 bullet 列表，无数据用占位
       if (data.skills && data.skills.length) {
