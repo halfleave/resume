@@ -568,15 +568,10 @@ section.block > h2 .sec-icon svg { width: 14px; height: 14px; }
 
 /* 打印友好 */
 @media print {
-  @page { margin: 14mm; }
   .edit-entry, .actions, .btn-add, .btn-del, .toast { display: none !important; }
   body { background: #fff; }
   .wrap { padding: 0; }
-  /* 允许大区块与单条记录跨页流动，仅在段落/列表内部避免断页，消除整段下移造成的空白 */
-  section.block { break-inside: auto; }
-  section.block > h2 { break-after: avoid; }
-  .item { break-inside: auto; }
-  .item p, .item ul { break-inside: avoid; }
+  section.block { break-inside: avoid; }
 }
 
 /* ===== iOS / iPad 适配 ===== */
